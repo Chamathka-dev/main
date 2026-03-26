@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Trash2, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Trash2, Loader2, Image as ImageIcon, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -10,12 +10,15 @@ export default function AdminPanel() {
   const [authError, setAuthError] = useState(false)
   const SECRET_PIN = '2026' 
 
+  // Portfolio State
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 }) // NEW: Progress State
   const [allImages, setAllImages] = useState([])
 
+  // Site Settings State
   const [settings, setSettings] = useState({ 
     whatsapp_number: '', 
     facebook_url: '', 
@@ -27,6 +30,9 @@ export default function AdminPanel() {
   const [heroFile2, setHeroFile2] = useState(null)
   const [settingsUploading, setSettingsUploading] = useState(false)
 
+  // NEW: Toast Notification State
+  const [toast, setToast] = useState(null)
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchCategories()
@@ -34,6 +40,12 @@ export default function AdminPanel() {
       fetchSettings()
     }
   }, [isAuthenticated])
+
+  // NEW: Helper function to show sleek toast messages
+  function showToast(message, type = 'success') {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000) // Auto-hide after 3 seconds
+  }
 
   async function fetchSettings() {
     const { data } = await supabase.from('site_settings').select('*').single()
@@ -63,42 +75,60 @@ export default function AdminPanel() {
     }
   }
 
-  // BULK UPLOAD PORTFOLIO
+  // BULK UPLOAD PORTFOLIO (WITH PROGRESS TRACKING)
   async function handleBulkUpload(e) {
     e.preventDefault()
-    if (files.length === 0 || !selectedCategory) return alert('Select files and category.')
+    if (files.length === 0 || !selectedCategory) {
+      return showToast('Please select files and a category.', 'error')
+    }
     
     setUploading(true)
+    setUploadProgress({ current: 0, total: files.length }) // Initialize Progress
     const uploadResults = []
 
     try {
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
         const fileExt = file.name.split('.').pop()
         const fileName = `p-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+        
+        // Upload to storage
         const { error: storageError } = await supabase.storage.from('portfolio-assets').upload(fileName, file)
         if (storageError) throw storageError
+        
+        // Get public URL
         const { data: { publicUrl } } = supabase.storage.from('portfolio-assets').getPublicUrl(fileName)
         uploadResults.push({ image_url: publicUrl, category_id: selectedCategory })
+        
+        // Update progress bar after each successful image
+        setUploadProgress({ current: i + 1, total: files.length })
       }
+      
+      // Save all links to database
       const { error: dbError } = await supabase.from('portfolio_images').insert(uploadResults)
       if (dbError) throw dbError
-      alert(`Uploaded ${files.length} photos!`)
+      
+      showToast(`Successfully published ${files.length} photos!`, 'success')
       setFiles([])
       document.getElementById('bulk-upload').value = ''
       fetchExistingImages()
     } catch (error) {
       console.error(error)
-      alert('Upload failed.')
+      showToast('Upload failed. Please check your connection.', 'error')
     } finally {
       setUploading(false)
+      setTimeout(() => setUploadProgress({ current: 0, total: 0 }), 1000) // Reset progress bar visually
     }
   }
 
   // DELETE PORTFOLIO IMAGE
   async function handleDelete(id) {
-    if (!confirm('Delete this photo?')) return
+    if (!confirm('Are you sure you want to delete this photo?')) return
     const { error } = await supabase.from('portfolio_images').delete().eq('id', id)
-    if (!error) setAllImages(allImages.filter(img => img.id !== id))
+    if (!error) {
+      setAllImages(allImages.filter(img => img.id !== id))
+      showToast('Photo deleted successfully.', 'success')
+    }
   }
 
   // UPDATE SETTINGS
@@ -127,39 +157,53 @@ export default function AdminPanel() {
       setHeroFile1(null)
       setHeroFile2(null)
       
-      alert('Settings & Hero Slider Updated!')
-    } finally { setSettingsUploading(false) }
+      showToast('Settings & Hero Slider Updated!', 'success')
+    } catch (error) {
+      showToast('Failed to save settings.', 'error')
+    } finally { 
+      setSettingsUploading(false) 
+    }
   }
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <form onSubmit={handleLogin} className="bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-800 text-center">
+        <form onSubmit={handleLogin} className="bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-800 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
           <h2 className="text-2xl font-bold text-white mb-6 uppercase tracking-widest">Admin Access</h2>
           <input 
             type="password" placeholder="ENTER PIN" value={passcode} onChange={e => setPasscode(e.target.value)}
-            className="w-full p-4 mb-4 bg-slate-950 text-white border border-slate-700 rounded-2xl text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full p-4 mb-4 bg-slate-950 text-white border border-slate-700 rounded-2xl text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 outline-none transition-all"
           />
-          {authError && <p className="text-red-400 mb-4 text-sm font-bold uppercase">Access Denied</p>}
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest">Unlock</button>
+          {authError && <p className="text-red-400 mb-4 text-sm font-bold uppercase animate-pulse">Access Denied</p>}
+          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest shadow-lg hover:shadow-blue-500/25">Unlock</button>
         </form>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900 relative">
+      <div className="max-w-6xl mx-auto space-y-8 pb-20">
         
-        <div className="bg-white p-6 rounded-3xl shadow-sm border flex justify-between items-center">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border flex justify-between items-center sticky top-4 z-40 backdrop-blur-xl bg-white/80">
           <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">STUDIO MANAGER</h1>
-          <button onClick={() => setIsAuthenticated(false)} className="text-xs font-black text-slate-400 hover:text-red-600 uppercase transition-colors tracking-widest">LOCK</button>
+          <button onClick={() => setIsAuthenticated(false)} className="text-xs font-black text-slate-400 hover:text-red-600 uppercase transition-colors tracking-widest bg-slate-100 hover:bg-red-50 px-4 py-2 rounded-full">LOCK</button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* BULK UPLOADER */}
-          <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+          <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden">
+            {uploading && (
+               <div className="absolute top-0 left-0 w-full h-1 bg-slate-100">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-300 ease-out" 
+                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                  ></div>
+               </div>
+            )}
+            
             <h2 className="text-sm font-black mb-6 uppercase tracking-widest text-slate-400">01. Bulk Portfolio Upload</h2>
             <form onSubmit={handleBulkUpload} className="space-y-6">
               
@@ -168,7 +212,8 @@ export default function AdminPanel() {
                 <select 
                   value={selectedCategory} 
                   onChange={e => setSelectedCategory(e.target.value)}
-                  className="w-full p-4 bg-slate-100 border-2 border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 text-black font-bold appearance-none cursor-pointer"
+                  className="w-full p-4 bg-slate-100 border-2 border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 text-black font-bold appearance-none cursor-pointer transition-all"
+                  disabled={uploading}
                 >
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id} className="text-black font-bold bg-white">
@@ -178,26 +223,38 @@ export default function AdminPanel() {
                 </select>
               </div>
 
-              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-slate-50 group">
+              <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${uploading ? 'border-blue-300 bg-blue-50' : 'border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/50 cursor-pointer'} group`}>
                 <input 
                   id="bulk-upload" type="file" accept="image/*" multiple 
                   onChange={e => setFiles(Array.from(e.target.files))}
                   className="hidden"
+                  disabled={uploading}
                 />
-                <label htmlFor="bulk-upload" className="cursor-pointer w-full h-full block">
-                  <ImageIcon className="mx-auto mb-3 text-slate-300 group-hover:text-blue-500 transition-colors" size={32} />
-                  <span className="block text-slate-900 font-bold uppercase text-xs tracking-widest">Select Multiple Photos</span>
-                  <span className="text-[10px] text-blue-600 mt-2 block font-black uppercase tracking-tighter">
-                    {files.length > 0 ? `${files.length} Files Ready` : 'No files selected'}
-                  </span>
+                <label htmlFor="bulk-upload" className={`w-full h-full block ${uploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  {uploading ? (
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Loader2 className="animate-spin text-blue-500" size={32} />
+                      <span className="block text-blue-700 font-bold uppercase text-xs tracking-widest">
+                        Uploading {uploadProgress.current} of {uploadProgress.total}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="mx-auto mb-3 text-slate-300 group-hover:text-blue-500 transition-colors" size={32} />
+                      <span className="block text-slate-900 font-bold uppercase text-xs tracking-widest">Select Multiple Photos</span>
+                      <span className="text-[10px] text-blue-600 mt-2 block font-black uppercase tracking-tighter">
+                        {files.length > 0 ? `${files.length} Files Ready` : 'No files selected'}
+                      </span>
+                    </>
+                  )}
                 </label>
               </div>
 
               <button 
-                type="submit" disabled={uploading}
-                className={`w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all shadow-lg ${uploading ? 'bg-slate-300' : 'bg-slate-900 hover:bg-black hover:shadow-2xl'}`}
+                type="submit" disabled={uploading || files.length === 0}
+                className={`w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all shadow-lg ${uploading || files.length === 0 ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-900 hover:bg-black hover:shadow-2xl active:scale-95'}`}
               >
-                {uploading ? <Loader2 className="animate-spin mx-auto" /> : `Publish ${files.length} Photos`}
+                {uploading ? 'Processing...' : `Publish ${files.length} Photos`}
               </button>
             </form>
           </div>
@@ -240,7 +297,7 @@ export default function AdminPanel() {
               <div className="h-px bg-slate-100 my-4" />
 
               <div className="space-y-4">
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl transition-all hover:border-blue-200">
                     <div className="flex justify-between items-center mb-3">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Hero Slide 01</p>
                       {settings.hero_image_url && <span className="text-[8px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold uppercase">Active</span>}
@@ -251,7 +308,7 @@ export default function AdminPanel() {
                     <input type="file" onChange={e => setHeroFile1(e.target.files[0])} className="w-full text-xs font-bold text-slate-900" />
                 </div>
 
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl transition-all hover:border-blue-200">
                     <div className="flex justify-between items-center mb-3">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Hero Slide 02</p>
                       {settings.hero_image_url_2 && <span className="text-[8px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold uppercase">Active</span>}
@@ -277,7 +334,7 @@ export default function AdminPanel() {
           {allImages.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
               {allImages.map((img) => (
-                <div key={img.id} className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm transition-all hover:shadow-xl">
+                <div key={img.id} className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
                   <img src={img.image_url} alt="" className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-500" />
                   <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white border border-white/20">
                     {img.categories?.name}
@@ -300,6 +357,15 @@ export default function AdminPanel() {
         </div>
 
       </div>
+
+      {/* TOAST NOTIFICATION CONTAINER */}
+      {toast && (
+        <div className={`fixed bottom-8 right-8 px-6 py-4 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] flex items-center gap-3 z-50 transition-all transform animate-in slide-in-from-bottom-5 fade-in duration-300 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'}`}>
+          {toast.type === 'success' ? <CheckCircle2 className="text-green-400" size={20} /> : <AlertCircle className="text-white" size={20} />}
+          <span className="text-xs font-black uppercase tracking-widest">{toast.message}</span>
+        </div>
+      )}
+
     </div>
   )
 }
