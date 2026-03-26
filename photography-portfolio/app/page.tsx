@@ -94,7 +94,8 @@ export default function Portfolio() {
             className={`absolute inset-0 bg-cover transition-opacity duration-1000 ease-in-out ${
               index === bgIndex ? 'opacity-100 z-0' : 'opacity-0 z-0'
             } ${
-              index === 0 ? 'bg-top md:bg-[center_top_15%]' : 'bg-center'
+              // FIXED: bg-center for mobile screens, top-offset only for desktop (md:)
+              index === 0 ? 'bg-center md:bg-[center_top_15%]' : 'bg-center'
             }`}
             style={{ backgroundImage: `url(${src})` }}
           />
@@ -125,15 +126,18 @@ export default function Portfolio() {
 
       {/* DYNAMIC CATEGORY TABS */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <div className="sticky top-4 z-30 flex flex-wrap justify-center gap-3 mb-12 p-2 rounded-3xl bg-white/40 backdrop-blur-lg shadow-sm border border-white/50 w-fit mx-auto">
+        {/* FIXED: Changed to a horizontally scrolling row on mobile (overflow-x-auto)
+          and hid the ugly scrollbar. It still wraps normally on desktop (md:flex-wrap).
+        */}
+        <div className="sticky top-4 z-30 flex md:flex-wrap overflow-x-auto justify-start md:justify-center gap-2 md:gap-3 mb-12 p-2 rounded-2xl md:rounded-3xl bg-white/70 md:bg-white/40 backdrop-blur-xl shadow-md border border-white/50 w-full md:w-fit mx-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setActiveTab(category.id)}
-              className={`px-6 py-2.5 rounded-full text-xs md:text-sm font-bold tracking-widest transition-all duration-300 uppercase ${
+              className={`whitespace-nowrap flex-shrink-0 px-5 py-2.5 md:px-6 md:py-2.5 rounded-full text-[10px] md:text-sm font-bold tracking-widest transition-all duration-300 uppercase ${
                 activeTab === category.id 
-                  ? 'bg-slate-900 text-white shadow-xl scale-105' 
-                  : 'bg-transparent text-slate-600 hover:bg-white/60'
+                  ? 'bg-slate-900 text-white shadow-xl md:scale-105' 
+                  : 'bg-transparent text-slate-700 hover:bg-white/60'
               }`}
             >
               {category.name}
@@ -141,7 +145,7 @@ export default function Portfolio() {
           ))}
         </div>
 
-        {/* MASONRY IMAGE GALLERY (Optimized with Next/Image) */}
+        {/* MASONRY IMAGE GALLERY */}
         <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
           {filteredImages.length > 0 ? (
             filteredImages.map((img) => (
@@ -151,16 +155,15 @@ export default function Portfolio() {
                 className="break-inside-avoid overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 bg-white group cursor-pointer relative"
               >
                 <Image 
-  src={img.image_url} 
-  alt="Portfolio shot" 
-  width={800}
-  height={1000}
-  quality={65} // <-- Lowers file size for thumbnails
-  // Tells the browser exactly what size image to download based on screen size
-  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-  loading="lazy"
-  className="w-full h-auto transition-transform duration-1000 group-hover:scale-110 bg-slate-200"
-/>
+                  src={img.image_url} 
+                  alt="Portfolio shot" 
+                  width={800}
+                  height={1000}
+                  quality={65}
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  loading="lazy"
+                  className="w-full h-auto transition-transform duration-1000 group-hover:scale-110 bg-slate-200"
+                />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
                   <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-light tracking-[0.3em] bg-black/40 px-6 py-3 rounded-full backdrop-blur-sm border border-white/20">
                     VIEW
@@ -195,14 +198,14 @@ export default function Portfolio() {
         </p>
       </footer>
 
-      {/* FULLSCREEN LIGHTBOX (Optimized with Next/Image) */}
+      {/* FULLSCREEN LIGHTBOX */}
       {selectedImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/98 backdrop-blur-3xl p-4"
           onClick={() => setSelectedImage(null)}
         >
           <button 
-            className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors"
+            className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors z-50"
             onClick={() => setSelectedImage(null)}
           >
             <X size={48} strokeWidth={1} />
