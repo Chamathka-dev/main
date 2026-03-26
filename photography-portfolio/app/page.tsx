@@ -94,10 +94,10 @@ export default function Portfolio() {
             className={`absolute inset-0 bg-cover transition-opacity duration-1000 ease-in-out ${
               index === bgIndex ? 'opacity-100 z-0' : 'opacity-0 z-0'
             } ${
-              // FIXED: Slide 1 focuses 75% right. Slide 2 focuses 85% right on mobile.
+              // FIXED: Slide 2 now uses 'bg-[right_top]' to push him to the far right edge on mobile!
               index === 0 
                 ? 'bg-[75%_top] md:bg-[center_top_15%]' 
-                : 'bg-[85%_top] md:bg-center'
+                : 'bg-[right_top] md:bg-center'
             }`}
             style={{ backgroundImage: `url(${src})` }}
           />
