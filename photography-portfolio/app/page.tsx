@@ -105,7 +105,8 @@ export default function Portfolio() {
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 via-80% to-transparent z-10" /> 
         
-        <div className="relative z-20 text-center flex flex-col items-center px-4 mt-12">
+        {/* Change mt-12 to mt-24 md:mt-12 to push the text down on mobile, but keep it normal on desktop */}
+<div className="relative z-20 text-center flex flex-col items-center px-4 mt-24 md:mt-12">
           <h1 className="text-6xl md:text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 mb-6 tracking-tight drop-shadow-2xl leading-tight">
             Hello!<br />I'm Pramuditha
           </h1>
