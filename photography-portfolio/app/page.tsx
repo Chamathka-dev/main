@@ -200,7 +200,7 @@ export default function Portfolio() {
         </div>
         <div className="w-16 h-px bg-slate-800 mx-auto mb-10"></div>
         <p className="text-slate-600 text-[10px] tracking-[0.2em] uppercase font-semibold italic">
-          © {new Date().getFullYear()} All Rights Reserved. Crafted with precision.
+          © {new Date().getFullYear()} All Rights Reserved. Crafted with precision by Chamathka Addarage.
         </p>
       </footer>
 
