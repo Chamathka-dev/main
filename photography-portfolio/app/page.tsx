@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { X } from 'lucide-react'
 import { FaFacebook, FaInstagram, FaWhatsapp } from 'react-icons/fa'
@@ -42,18 +43,15 @@ export default function Portfolio() {
   async function fetchPortfolioData() {
     setLoading(true)
     try {
-      // Fetch site settings (Hero images & Social Links)
       const { data: settingsData } = await supabase.from('site_settings').select('*').single()
       if (settingsData) setSettings(settingsData)
 
-      // Fetch categories ordered by ID so "Weddings" is first
       const { data: catData } = await supabase.from('categories').select('*').order('id')
       if (catData && catData.length > 0) {
         setCategories(catData)
         setActiveTab(catData[0].id)
       }
 
-      // Fetch portfolio images
       const { data: imgData } = await supabase.from('portfolio_images').select('*').order('sort_order')
       if (imgData) setImages(imgData)
 
@@ -113,7 +111,6 @@ export default function Portfolio() {
             "Capturing moments that stay with you forever."
           </p>
           
-          {/* HIGH-VISIBILITY WHATSAPP BUTTON */}
           <a 
             href={`https://wa.me/${settings.whatsapp_number}`} 
             target="_blank" 
@@ -144,7 +141,7 @@ export default function Portfolio() {
           ))}
         </div>
 
-        {/* MASONRY IMAGE GALLERY */}
+        {/* MASONRY IMAGE GALLERY (Optimized with Next/Image) */}
         <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
           {filteredImages.length > 0 ? (
             filteredImages.map((img) => (
@@ -153,9 +150,12 @@ export default function Portfolio() {
                 onClick={() => setSelectedImage(img.image_url)}
                 className="break-inside-avoid overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 bg-white group cursor-pointer relative"
               >
-                <img 
+                <Image 
                   src={img.image_url} 
                   alt="Portfolio shot" 
+                  width={800}
+                  height={1000}
+                  loading="lazy"
                   className="w-full h-auto transition-transform duration-1000 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
@@ -173,7 +173,7 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* FOOTER WITH DYNAMIC SOCIAL LINKS */}
+      {/* FOOTER */}
       <footer className="bg-slate-950 text-slate-300 py-20 text-center">
         <h3 className="text-xl font-bold mb-8 tracking-[0.4em] text-white uppercase drop-shadow-md">
            Pramuditha Dissanayaka
@@ -192,7 +192,7 @@ export default function Portfolio() {
         </p>
       </footer>
 
-      {/* FULLSCREEN LIGHTBOX */}
+      {/* FULLSCREEN LIGHTBOX (Optimized with Next/Image) */}
       {selectedImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/98 backdrop-blur-3xl p-4"
@@ -205,12 +205,15 @@ export default function Portfolio() {
             <X size={48} strokeWidth={1} />
           </button>
           
-          <img 
-            src={selectedImage} 
-            alt="Expanded view" 
-            className="max-w-full max-h-[92vh] object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div className="relative w-full max-w-5xl h-[90vh]">
+            <Image 
+              src={selectedImage} 
+              alt="Expanded view" 
+              fill
+              className="object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
 

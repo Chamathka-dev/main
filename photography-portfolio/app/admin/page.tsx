@@ -10,15 +10,12 @@ export default function AdminPanel() {
   const [authError, setAuthError] = useState(false)
   const SECRET_PIN = '2026' 
 
-  // Portfolio State
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [allImages, setAllImages] = useState([])
 
-  // Site Settings State (Socials + Hero)
-  // ADDED: hero_image_url and hero_image_url_2 to the initial state
   const [settings, setSettings] = useState({ 
     whatsapp_number: '', 
     facebook_url: '', 
@@ -87,6 +84,7 @@ export default function AdminPanel() {
       if (dbError) throw dbError
       alert(`Uploaded ${files.length} photos!`)
       setFiles([])
+      document.getElementById('bulk-upload').value = ''
       fetchExistingImages()
     } catch (error) {
       console.error(error)
@@ -103,7 +101,7 @@ export default function AdminPanel() {
     if (!error) setAllImages(allImages.filter(img => img.id !== id))
   }
 
-  // UPDATE SETTINGS (Hero Sliders & Social Links)
+  // UPDATE SETTINGS
   async function handleSettingsSave(e) {
     e.preventDefault()
     setSettingsUploading(true)
@@ -125,7 +123,6 @@ export default function AdminPanel() {
       }
       await supabase.from('site_settings').update(updates).eq('id', 1)
       
-      // Refresh the settings so the new images instantly appear in the admin previews
       fetchSettings() 
       setHeroFile1(null)
       setHeroFile2(null)
@@ -154,9 +151,8 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* HEADER */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border flex justify-between items-center">
-          <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">PRAMUDITHA DISSANAYAKA - PORTFOLIO MANAGER</h1>
+          <h1 className="text-xl font-black uppercase tracking-widest text-slate-900">STUDIO MANAGER</h1>
           <button onClick={() => setIsAuthenticated(false)} className="text-xs font-black text-slate-400 hover:text-red-600 uppercase transition-colors tracking-widest">LOCK</button>
         </div>
 
@@ -188,7 +184,7 @@ export default function AdminPanel() {
                   onChange={e => setFiles(Array.from(e.target.files))}
                   className="hidden"
                 />
-                <label htmlFor="bulk-upload" className="cursor-pointer">
+                <label htmlFor="bulk-upload" className="cursor-pointer w-full h-full block">
                   <ImageIcon className="mx-auto mb-3 text-slate-300 group-hover:text-blue-500 transition-colors" size={32} />
                   <span className="block text-slate-900 font-bold uppercase text-xs tracking-widest">Select Multiple Photos</span>
                   <span className="text-[10px] text-blue-600 mt-2 block font-black uppercase tracking-tighter">
@@ -206,13 +202,13 @@ export default function AdminPanel() {
             </form>
           </div>
 
-          {/* SITE SETTINGS (Socials + Hero Slider) */}
+          {/* SITE SETTINGS */}
           <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 h-fit">
             <h2 className="text-sm font-black mb-6 uppercase tracking-widest text-slate-400">02. Site & Social Settings</h2>
             <form onSubmit={handleSettingsSave} className="space-y-4">
               
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">WhatsApp Number (e.g. 94771234567)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">WhatsApp Number</label>
                 <input 
                   type="text" 
                   value={settings.whatsapp_number || ''}
@@ -244,7 +240,6 @@ export default function AdminPanel() {
               <div className="h-px bg-slate-100 my-4" />
 
               <div className="space-y-4">
-                {/* PREVIEW 1 */}
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                     <div className="flex justify-between items-center mb-3">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Hero Slide 01</p>
@@ -256,7 +251,6 @@ export default function AdminPanel() {
                     <input type="file" onChange={e => setHeroFile1(e.target.files[0])} className="w-full text-xs font-bold text-slate-900" />
                 </div>
 
-                {/* PREVIEW 2 */}
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                     <div className="flex justify-between items-center mb-3">
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Hero Slide 02</p>
