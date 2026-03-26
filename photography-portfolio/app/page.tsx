@@ -151,13 +151,16 @@ export default function Portfolio() {
                 className="break-inside-avoid overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 bg-white group cursor-pointer relative"
               >
                 <Image 
-                  src={img.image_url} 
-                  alt="Portfolio shot" 
-                  width={800}
-                  height={1000}
-                  loading="lazy"
-                  className="w-full h-auto transition-transform duration-1000 group-hover:scale-110"
-                />
+  src={img.image_url} 
+  alt="Portfolio shot" 
+  width={800}
+  height={1000}
+  quality={65} // <-- Lowers file size for thumbnails
+  // Tells the browser exactly what size image to download based on screen size
+  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+  loading="lazy"
+  className="w-full h-auto transition-transform duration-1000 group-hover:scale-110 bg-slate-200"
+/>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
                   <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-light tracking-[0.3em] bg-black/40 px-6 py-3 rounded-full backdrop-blur-sm border border-white/20">
                     VIEW
