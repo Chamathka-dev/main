@@ -94,9 +94,10 @@ export default function Portfolio() {
             className={`absolute inset-0 bg-cover transition-opacity duration-1000 ease-in-out ${
               index === bgIndex ? 'opacity-100 z-0' : 'opacity-0 z-0'
             } ${
-              // FIXED: Shifts the mobile view 75% to the right to center your body, 
-              // while keeping the desktop view centered with a 15% top offset.
-              index === 0 ? 'bg-[75%_top] md:bg-[center_top_15%]' : 'bg-center'
+              // FIXED: Slide 1 focuses 75% right. Slide 2 focuses 85% right on mobile.
+              index === 0 
+                ? 'bg-[75%_top] md:bg-[center_top_15%]' 
+                : 'bg-[85%_top] md:bg-center'
             }`}
             style={{ backgroundImage: `url(${src})` }}
           />
@@ -128,7 +129,7 @@ export default function Portfolio() {
       {/* DYNAMIC CATEGORY TABS */}
       <section className="max-w-7xl mx-auto px-4 py-16">
         
-        {/* NEW: MOBILE SWIPE HINT */}
+        {/* MOBILE SWIPE HINT */}
         <div className="w-full flex md:hidden items-center justify-center gap-2 mb-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">
           <span>Swipe for more</span>
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
